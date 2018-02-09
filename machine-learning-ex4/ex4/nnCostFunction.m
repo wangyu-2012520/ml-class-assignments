@@ -63,28 +63,80 @@ Theta2_grad = zeros(size(Theta2));
 %
 y_matrix = eye(num_labels)(y,:);
 
+% add the column of 1’s to the X matrix, to calculate a1
 a1 = [ones(size(X,1),1) X];
 
+% calculate a2; add the column of 1's to a2 matrix
 z2 = a1 * Theta1';
 a2 = sigmoid(z2);
 a2 = [ones(size(a2,1),1) a2];
 
+% calculate a3
 z3 = a2 * Theta2';
 a3 = sigmoid(z3);
 
+% calculate cost function
 J = -y_matrix.*log(a3) - (1-y_matrix).*log(1-a3);
 J = sum(sum(J)) / m;
 
 
+% Let:
+% 
+% m = the number of training examples
+% 
+% n = the number of training features, including the initial bias unit.
+% 
+% h = the number of units in the hidden layer - NOT including the bias unit
+% 
+% r = the number of output classifications
+% 
+% -------------------------------
+% 
+% 1: Perform forward propagation, see the separate tutorial if necessary.
+% 
+% 2: Del3 or d3 is the difference between a3 and the y_matrix. The dimensions are the same as both, (m x r).
+% 
+% 3: z2 came from the forward propagation process - it's the product of a1 and Theta1, 
+% prior to applying the sigmoid() function. Dimensions are (m x n)  (n x h) --> (m x h)
+% 
+% 4: Del2 or d2 is tricky. It uses the (:,2:end) columns of Theta2. d2 is the product of d3 and Theta2(no bias), 
+% then element-wise scaled by sigmoid gradient of z2. The size is (m x r)  (r x h) --> (m x h). The size is the same as z2, as must be.
+% 
+% 5: Delta1 is the product of d2 and a1. The size is (h x m)  (m x n) --> (h x n)
+% 
+% 6: Delta2 is the product of d3 and a2. The size is (r x m)  (m x [h+1]) --> (r x [h+1])
+% 
+% 7: Theta1_grad and Theta2_grad are the same size as their respective Deltas, just scaled by 1/m.
 
 
+Del2 = 0;
+Del1 = 0;
+
+temp = Theta2(:,2:end);
+
+Theta1(:,[1]) = 0;
+Theta2(:,[1]) = 0;
+
+for i = 1:m,
+	delta_3 = a3(i,:) - y_matrix(i,:);
+	delta_2 = (delta_3 * temp).* sigmoidGradient(z2(i,:));
+
+	Del2 = Del2 + delta_3' * a2(i,:);
+	Del1 = Del1 + delta_2' * a1(i,:);
+
+end;
+
+	Theta2_grad = Del2 / m + lambda / m * Theta2;
+	Theta1_grad = Del1 / m + lambda / m * Theta1; 
+
+% get rid of the first column of Theta1 and Theta2, because it should not be regularizing 
+% the terms that correspond to the bias
+Theta1(:,[1]) = [];
+Theta2(:,[1]) = [];
 
 
-
-
-
-
-
+% calculate Regularized cost function, no considering the Theta1 and Theta2 with bias
+J = J + lambda / 2 / m * (sum(sum(Theta1.*Theta1)) + sum(sum(Theta2.*Theta2)));
 
 
 
